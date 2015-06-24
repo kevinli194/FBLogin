@@ -10,9 +10,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
+//Facebook imports
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
@@ -22,18 +22,22 @@ import com.facebook.Profile;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 
-
-import retrofit.Callback;
+//Retrofit imports
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
+//Twitter imports.
+import com.twitter.sdk.android.core.Callback;
+import com.twitter.sdk.android.core.Result;
+import com.twitter.sdk.android.core.TwitterException;
+import com.twitter.sdk.android.core.TwitterSession;
+import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 
 /**
  * A placeholder fragment containing a simple view.
  */
 public class LoginFragment extends Fragment {
-    private CallbackManager mCallbackManager;
     //private TextView mTextDisplayed;
 
     // List of endpoints to test
@@ -41,8 +45,11 @@ public class LoginFragment extends Fragment {
     private static final String TEST_URL = "http://52.11.39.63:3008";
     private static final String WORKING_BOOST = "http://199.217.119.199:3009";
 
+    // Facebook objects.
+    private LoginButton fbLoginButton;
+    private CallbackManager mCallbackManager;
     // Callback that responds based on callback from Facebook Login attempt.
-    private FacebookCallback<LoginResult> myCallBack = new FacebookCallback<LoginResult>() {
+    private FacebookCallback<LoginResult> facebookCallback = new FacebookCallback<LoginResult>() {
         @Override
         public void onSuccess(LoginResult loginResult) {
             AccessToken accessToken = loginResult.getAccessToken();
@@ -64,6 +71,19 @@ public class LoginFragment extends Fragment {
 
         }
     };
+    //Twitter objects.
+    private TwitterLoginButton twitterLoginButton;
+    private Callback<TwitterSession> twitterSessionCallback = new Callback<TwitterSession>() {
+        @Override
+        public void success(Result<TwitterSession> result) {
+
+        }
+
+        @Override
+        public void failure(TwitterException e) {
+
+        }
+    };
 
     public LoginFragment() {
     }
@@ -71,9 +91,8 @@ public class LoginFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //Initialize the SDK of FB
+        //Initialize the SDK of FB and constructing the callbackmanager
         FacebookSdk.sdkInitialize(getActivity().getApplicationContext());
-        //Use Factory to construct a callbackmanager
         mCallbackManager = CallbackManager.Factory.create();
 
     }
@@ -90,16 +109,22 @@ public class LoginFragment extends Fragment {
         //mTextDisplayed = (TextView) view.findViewById(R.id.text_details);
 
         // Create facebook button and initialize permissions.
-        LoginButton loginButton = (LoginButton) view.findViewById(R.id.login_button);
-        loginButton.setPublishPermissions("publish_actions");
-        loginButton.setFragment(this);
-        loginButton.registerCallback(mCallbackManager, myCallBack);
+        fbLoginButton = (LoginButton) view.findViewById(R.id.login_button);
+        fbLoginButton.setPublishPermissions("publish_actions");
+        fbLoginButton.setFragment(this);
+        fbLoginButton.registerCallback(mCallbackManager, facebookCallback);
+
+        //Creating loginButton and setting the callback.
+        twitterLoginButton = (TwitterLoginButton) view.findViewById(R.id.twitter_login_button);
+        twitterLoginButton.setCallback(twitterSessionCallback);
+
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         mCallbackManager.onActivityResult(requestCode, resultCode, data);
+        //loginButton.onActivityResult(requestCode, resultCode, data);
     }
 
     /**
@@ -118,7 +143,7 @@ public class LoginFragment extends Fragment {
         ServerEndPointInterface apiService =
                 restAdapter.create(ServerEndPointInterface.class);
         System.out.println("Broken: 2");
-        apiService.postMessage(fBPost, new Callback<FBReturn>() {
+        apiService.postMessage(fBPost, new retrofit.Callback<FBReturn>() {
             @Override
             public void success(FBReturn result, Response response) {
                 makeToast(result.getMessage() + " " + result.getStatus());
