@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">FBLogin</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="app_id">683269431817200</string>
+    <string name="server">http://52.11.39.63:3008/network/facebook/post_to_timeline</string>
+    <string name="post">Test Post Sent from Android</string>
+</resources>
