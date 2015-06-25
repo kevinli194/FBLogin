@@ -1,7 +1,10 @@
 package com.boostinsider.fblogin;
 
+import android.app.Fragment;
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -35,5 +38,19 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // Pass the activity result to the fragment, which will
+        // then pass the result to the login button.
+        Fragment fragment = getFragmentManager()
+                .findFragmentById(R.id.login_page);
+        Log.d("ERROR", "Looking for fragment");
+        if (fragment != null) {
+            Log.d("ERROR", "Found fragment");
+            fragment.onActivityResult(requestCode, resultCode, data);
+        }
     }
 }

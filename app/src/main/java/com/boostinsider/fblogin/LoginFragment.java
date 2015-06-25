@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.facebook.AccessToken;
@@ -23,10 +22,15 @@ import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 
 
-import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
+
+import com.twitter.sdk.android.core.Callback;
+import com.twitter.sdk.android.core.Result;
+import com.twitter.sdk.android.core.TwitterException;
+import com.twitter.sdk.android.core.TwitterSession;
+import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 
 
 /**
@@ -37,9 +41,7 @@ public class LoginFragment extends Fragment {
     //private TextView mTextDisplayed;
 
     // List of endpoints to test
-    private static final String WORKING_URL = "http://posttestserver.com";
     private static final String TEST_URL = "http://52.11.39.63:3008";
-    private static final String WORKING_BOOST = "http://199.217.119.199:3009";
 
     // Callback that responds based on callback from Facebook Login attempt.
     private FacebookCallback<LoginResult> myCallBack = new FacebookCallback<LoginResult>() {
@@ -64,6 +66,8 @@ public class LoginFragment extends Fragment {
 
         }
     };
+
+    private TwitterLoginButton loginButton;
 
     public LoginFragment() {
     }
@@ -90,16 +94,32 @@ public class LoginFragment extends Fragment {
         //mTextDisplayed = (TextView) view.findViewById(R.id.text_details);
 
         // Create facebook button and initialize permissions.
-        LoginButton loginButton = (LoginButton) view.findViewById(R.id.login_button);
-        loginButton.setPublishPermissions("publish_actions");
-        loginButton.setFragment(this);
-        loginButton.registerCallback(mCallbackManager, myCallBack);
+        LoginButton fBLogin = (LoginButton) view.findViewById(R.id.login_button);
+        fBLogin.setPublishPermissions("publish_actions");
+        fBLogin.setFragment(this);
+        fBLogin.registerCallback(mCallbackManager, myCallBack);
+
+        loginButton = (TwitterLoginButton) view.findViewById(R.id.twitter_login_button);
+        loginButton.setCallback(new Callback<TwitterSession>() {
+            @Override
+            public void success(Result<TwitterSession> result) {
+                // Do something with result, which provides a TwitterSession for making API calls
+                makeToast("Login to Twitter was successful");
+            }
+
+            @Override
+            public void failure(TwitterException exception) {
+                // Do something on failure
+                makeToast("Login to Twitter failed");
+            }
+        });
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         mCallbackManager.onActivityResult(requestCode, resultCode, data);
+        loginButton.onActivityResult(requestCode, resultCode, data);
     }
 
     /**
@@ -114,22 +134,17 @@ public class LoginFragment extends Fragment {
         RestAdapter restAdapter = new RestAdapter.Builder()
                 .setEndpoint(TEST_URL)
                 .build();
-        System.out.println("Broken: 1");
         ServerEndPointInterface apiService =
                 restAdapter.create(ServerEndPointInterface.class);
-        System.out.println("Broken: 2");
-        apiService.postMessage(fBPost, new Callback<FBReturn>() {
+        apiService.postMessage(fBPost, new retrofit.Callback<FBReturn>() {
             @Override
             public void success(FBReturn result, Response response) {
-                makeToast(result.getMessage() + " " + result.getStatus());
+                makeToast("Posted to Facebook");
             }
 
             @Override
             public void failure(RetrofitError error) {
-                String url = error.getUrl();
-                System.out.println(url);
-                System.out.println(error.getMessage());
-                makeToast("Failed: " + url );
+                makeToast("Failed to post to Facebook");
             }
         });
     }
