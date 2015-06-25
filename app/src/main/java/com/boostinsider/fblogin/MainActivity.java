@@ -10,8 +10,14 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.twitter.sdk.android.Twitter;
+import com.twitter.sdk.android.core.TwitterAuthConfig;
+
+import io.fabric.sdk.android.Fabric;
+
 
 public class MainActivity extends FragmentActivity {
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,9 +54,7 @@ public class MainActivity extends FragmentActivity {
         // Pass the activity result to the fragment, which will
         // then pass the result to the login button.
         Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment);
-        Log.d("ERROR", "Looking for fragment");
         if (fragment != null) {
-            Log.d("ERROR", "Found fragment");
             fragment.onActivityResult(requestCode, resultCode, data);
         }
     }

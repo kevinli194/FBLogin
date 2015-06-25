@@ -1,17 +1,20 @@
 package com.boostinsider.fblogin;
 
 import com.boostinsider.fblogin.RetroFitAPI.ServerEndPointInterface;
-import com.boostinsider.fblogin.RetroFitAPI.models.FBPost;
-import com.boostinsider.fblogin.RetroFitAPI.models.FBReturn;
+import com.boostinsider.fblogin.RetroFitAPI.models.fBModel;
+import com.boostinsider.fblogin.RetroFitAPI.models.serverReturn;
+
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.boostinsider.fblogin.RetroFitAPI.models.twitterModel;
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
@@ -22,19 +25,23 @@ import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 
 
+import io.fabric.sdk.android.Fabric;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
+import com.twitter.sdk.android.Twitter;
 import com.twitter.sdk.android.core.Callback;
 import com.twitter.sdk.android.core.Result;
+import com.twitter.sdk.android.core.TwitterAuthConfig;
+import com.twitter.sdk.android.core.TwitterAuthToken;
 import com.twitter.sdk.android.core.TwitterException;
 import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 
 
 /**
- * A placeholder fragment containing a simple view.
+ * Fragment that contains gives users the capability to login from different social media websites. Currently supports: Twitter and Facebook.
  */
 public class LoginFragment extends Fragment {
     private CallbackManager mCallbackManager;
@@ -42,16 +49,22 @@ public class LoginFragment extends Fragment {
 
     // List of endpoints to test
     private static final String TEST_URL = "http://52.11.39.63:3008";
+    // Test messages
+    private static final String TEST_MESSAGE = "This is a test message.";
 
-    // Callback that responds based on callback from Facebook Login attempt.
-    private FacebookCallback<LoginResult> myCallBack = new FacebookCallback<LoginResult>() {
+    //Secret and Consumer Keys
+    private static final String TWITTER_KEY = "2JGw8IRjGhlRCfVloFuiuFfCe";
+    private static final String TWITTER_SECRET = "EPm5nbmIo4vKXMGyQLOFtK0wv9Aeu5QVxuLpNCkILLGh6XaZEq";
+
+    // Internal Variables for Facebook Integration
+    private LoginButton fBLogin;
+    private FacebookCallback<LoginResult> fBCallback = new FacebookCallback<LoginResult>() {
         @Override
         public void onSuccess(LoginResult loginResult) {
             AccessToken accessToken = loginResult.getAccessToken();
             Profile profile = Profile.getCurrentProfile();
             if (profile != null) {
-                //loopJ(accessToken, "Testing FB Post via Android.");
-                retroFit(accessToken, "Testing FB Post.");
+                postFB(accessToken, TEST_MESSAGE);
 
             }
         }
@@ -67,7 +80,24 @@ public class LoginFragment extends Fragment {
         }
     };
 
-    private TwitterLoginButton loginButton;
+    private TwitterLoginButton twitterLogin;
+    private Callback<TwitterSession> twitterCallback = new Callback<TwitterSession>() {
+        @Override
+        public void success(Result<TwitterSession> result) {
+            makeToast("Login Succeeded");
+            TwitterSession session =
+                    Twitter.getSessionManager().getActiveSession();
+            TwitterAuthToken authToken = session.getAuthToken();
+            String token = authToken.token;
+            String secret = authToken.secret;
+            postTwitter(token, secret, TEST_MESSAGE);
+        }
+
+        @Override
+        public void failure(TwitterException e) {
+            makeToast("Login Failed");
+        }
+    };
 
     public LoginFragment() {
     }
@@ -77,8 +107,10 @@ public class LoginFragment extends Fragment {
         super.onCreate(savedInstanceState);
         //Initialize the SDK of FB
         FacebookSdk.sdkInitialize(getActivity().getApplicationContext());
-        //Use Factory to construct a callbackmanager
         mCallbackManager = CallbackManager.Factory.create();
+        //Initialize configs for Twitter
+        TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
+        Fabric.with(getActivity(), new Twitter(authConfig));
 
     }
 
@@ -92,43 +124,39 @@ public class LoginFragment extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         //mTextDisplayed = (TextView) view.findViewById(R.id.text_details);
+        initializeButtons(view);
+    }
 
-        // Create facebook button and initialize permissions.
-        LoginButton fBLogin = (LoginButton) view.findViewById(R.id.login_button);
+    /**
+     * Initialize login button onto the view provided.
+     *
+     * @param view
+     */
+    private void initializeButtons(View view) {
+        fBLogin = (LoginButton) view.findViewById(R.id.login_button);
         fBLogin.setPublishPermissions("publish_actions");
         fBLogin.setFragment(this);
-        fBLogin.registerCallback(mCallbackManager, myCallBack);
-
-        loginButton = (TwitterLoginButton) view.findViewById(R.id.twitter_login_button);
-        loginButton.setCallback(new Callback<TwitterSession>() {
-            @Override
-            public void success(Result<TwitterSession> result) {
-                // Do something with result, which provides a TwitterSession for making API calls
-                makeToast("Login to Twitter was successful");
-            }
-
-            @Override
-            public void failure(TwitterException exception) {
-                // Do something on failure
-                makeToast("Login to Twitter failed");
-            }
-        });
+        fBLogin.registerCallback(mCallbackManager, fBCallback);
+        //Instantiate twitterLogin and set callbacks.
+        twitterLogin = (TwitterLoginButton) view.findViewById(R.id.twitter_login_button);
+        twitterLogin.setCallback(twitterCallback);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         mCallbackManager.onActivityResult(requestCode, resultCode, data);
-        loginButton.onActivityResult(requestCode, resultCode, data);
+        twitterLogin.onActivityResult(requestCode, resultCode, data);
     }
 
     /**
      * Sends a fb message to the backend using the RetroFit library.
+     *
      * @param token access token generated on login by FB
-     * @param post message to be posted on FB
+     * @param post  message to be posted on FB
      */
-    private void retroFit(AccessToken token, String post) {
-        FBPost fBPost = new FBPost();
+    private void postFB(AccessToken token, String post) {
+        fBModel fBPost = new fBModel();
         fBPost.setToken(token.getToken());
         fBPost.setMessage(post);
         RestAdapter restAdapter = new RestAdapter.Builder()
@@ -136,10 +164,10 @@ public class LoginFragment extends Fragment {
                 .build();
         ServerEndPointInterface apiService =
                 restAdapter.create(ServerEndPointInterface.class);
-        apiService.postMessage(fBPost, new retrofit.Callback<FBReturn>() {
+        apiService.postMessage(fBPost, new retrofit.Callback<serverReturn>() {
             @Override
-            public void success(FBReturn result, Response response) {
-                makeToast("Posted to Facebook");
+            public void success(serverReturn result, Response response) {
+                makeToast("Posted to Facebook!");
             }
 
             @Override
@@ -148,9 +176,36 @@ public class LoginFragment extends Fragment {
             }
         });
     }
+    private void postTwitter(String token, String secret, String message ) {
+        twitterModel tw = new twitterModel();
+        tw.setToken(token);
+        tw.setSecret(secret);
+        tw.setMessage(message);
+        RestAdapter restAdapter = new RestAdapter.Builder()
+                .setEndpoint(TEST_URL)
+                .build();
+        ServerEndPointInterface apiService =
+                restAdapter.create(ServerEndPointInterface.class);
+
+        apiService.postMessage(tw, new retrofit.Callback<serverReturn>() {
+            @Override
+            public void success(serverReturn result, Response response) {
+                makeToast("Posted to Twitter!");
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                String url = error.getUrl();
+                System.out.println(url);
+                System.out.println(error.getMessage());
+                makeToast("Failed to post to Twitter");
+            }
+        });
+    }
 
     /**
      * Makes a toast based on input message.
+     *
      * @param message
      */
     private void makeToast(String message) {
