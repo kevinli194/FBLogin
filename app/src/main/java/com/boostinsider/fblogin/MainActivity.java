@@ -1,15 +1,17 @@
 package com.boostinsider.fblogin;
 
-import android.app.Fragment;
+
 import android.content.Intent;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v4.app.Fragment;
+
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,8 +47,7 @@ public class MainActivity extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
         // Pass the activity result to the fragment, which will
         // then pass the result to the login button.
-        Fragment fragment = getFragmentManager()
-                .findFragmentById(R.id.login_page);
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment);
         Log.d("ERROR", "Looking for fragment");
         if (fragment != null) {
             Log.d("ERROR", "Found fragment");
