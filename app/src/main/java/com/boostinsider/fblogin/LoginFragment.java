@@ -1,5 +1,7 @@
 package com.boostinsider.fblogin;
 
+import com.boostinsider.fblogin.OAuthAPI.Constants.TumblrConstants;
+import com.boostinsider.fblogin.OAuthAPI.OAuth;
 import com.boostinsider.fblogin.RetroFitAPI.ServerEndPointInterface;
 import com.boostinsider.fblogin.RetroFitAPI.models.fBModel;
 import com.boostinsider.fblogin.RetroFitAPI.models.serverReturn;
@@ -12,6 +14,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.boostinsider.fblogin.RetroFitAPI.models.twitterModel;
@@ -30,6 +33,9 @@ import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
+
+import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
+import com.google.api.client.auth.oauth2.Credential;
 import com.twitter.sdk.android.Twitter;
 import com.twitter.sdk.android.core.Callback;
 import com.twitter.sdk.android.core.Result;
@@ -38,6 +44,9 @@ import com.twitter.sdk.android.core.TwitterAuthToken;
 import com.twitter.sdk.android.core.TwitterException;
 import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
+import com.wuman.android.auth.OAuthManager;
+
+import java.io.IOException;
 
 
 /**
@@ -50,7 +59,7 @@ public class LoginFragment extends Fragment {
     // List of endpoints to test
     private static final String TEST_URL = "http://52.11.39.63:3008";
     // Test messages
-    private static final String TEST_MESSAGE = "This is a test message.";
+    private static final String TEST_MESSAGE = "Second Test Message";
 
     //Secret and Consumer Keys
     private static final String TWITTER_KEY = "2JGw8IRjGhlRCfVloFuiuFfCe";
@@ -61,6 +70,7 @@ public class LoginFragment extends Fragment {
     private FacebookCallback<LoginResult> fBCallback = new FacebookCallback<LoginResult>() {
         @Override
         public void onSuccess(LoginResult loginResult) {
+            makeToast("Login Successful");
             AccessToken accessToken = loginResult.getAccessToken();
             Profile profile = Profile.getCurrentProfile();
             if (profile != null) {
@@ -80,16 +90,18 @@ public class LoginFragment extends Fragment {
         }
     };
 
+    //Internal variables for Twitter Integration
     private TwitterLoginButton twitterLogin;
     private Callback<TwitterSession> twitterCallback = new Callback<TwitterSession>() {
         @Override
         public void success(Result<TwitterSession> result) {
-            makeToast("Login Succeeded");
+            makeToast("Login Successful");
             TwitterSession session =
                     Twitter.getSessionManager().getActiveSession();
             TwitterAuthToken authToken = session.getAuthToken();
             String token = authToken.token;
             String secret = authToken.secret;
+            makeToast(token + secret);
             postTwitter(token, secret, TEST_MESSAGE);
         }
 
@@ -98,6 +110,45 @@ public class LoginFragment extends Fragment {
             makeToast("Login Failed");
         }
     };
+
+    //Internal variables for Tumblr Integration
+    private Button tumblrLogin;
+    private View.OnClickListener tumblrClick = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            makeToast("Button works");
+            getTumblrCredentials();
+        }
+    };
+
+    private OAuthManager.OAuthCallback<Credential> tumblrCallback = new OAuthManager.OAuthCallback<Credential>() {
+        @Override
+        public void run(OAuthManager.OAuthFuture<Credential> future) {
+            try {
+                Credential credential = future.getResult();
+                makeToast("Login Successful");
+            } catch (IOException e) {
+                makeToast("Login Failed");
+                e.printStackTrace();
+            }
+
+
+        }
+    };
+    OAuth tumblrOAuth;
+
+    private void getTumblrCredentials() {
+        tumblrOAuth = OAuth.newInstance(getActivity().getApplicationContext(),
+                getActivity().getSupportFragmentManager(),
+                new ClientParametersAuthentication(TumblrConstants.CLIENT_ID,
+                        TumblrConstants.CLIENT_SECRET),
+                TumblrConstants.AUTHORIZATION_CODE_URL,
+                TumblrConstants.ACCESS_TOKEN_SERVER_URL,
+                TumblrConstants.REDIRECT_URL, null,
+                TumblrConstants.REQUEST_TOKEN_URL);
+        tumblrOAuth.authorize10a("Tumblr", tumblrCallback, null);
+    }
 
     public LoginFragment() {
     }
@@ -140,6 +191,8 @@ public class LoginFragment extends Fragment {
         //Instantiate twitterLogin and set callbacks.
         twitterLogin = (TwitterLoginButton) view.findViewById(R.id.twitter_login_button);
         twitterLogin.setCallback(twitterCallback);
+        tumblrLogin = (Button) view.findViewById(R.id.tumblr_login_button);
+        tumblrLogin.setOnClickListener(tumblrClick);
     }
 
     @Override
@@ -176,11 +229,21 @@ public class LoginFragment extends Fragment {
             }
         });
     }
-    private void postTwitter(String token, String secret, String message ) {
+
+    /**
+     * Posts a twitter message through the backend using Retrofit library.
+     * @param token
+     * @param secret
+     * @param message
+     */
+
+    private void postTwitter(String token, String secret, String message) {
         twitterModel tw = new twitterModel();
         tw.setToken(token);
         tw.setSecret(secret);
         tw.setMessage(message);
+        Log.d("Secret :", secret);
+        Log.d("Token :", token);
         RestAdapter restAdapter = new RestAdapter.Builder()
                 .setEndpoint(TEST_URL)
                 .build();
@@ -213,6 +276,7 @@ public class LoginFragment extends Fragment {
         int duration = Toast.LENGTH_SHORT;
         Toast toast = Toast.makeText(context, message, duration);
         toast.show();
+
     }
 
 

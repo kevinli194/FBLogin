@@ -2,6 +2,7 @@ package com.boostinsider.fblogin.RetroFitAPI;
 
 import com.boostinsider.fblogin.RetroFitAPI.models.fBModel;
 import com.boostinsider.fblogin.RetroFitAPI.models.serverReturn;
+import com.boostinsider.fblogin.RetroFitAPI.models.tumblrModel;
 import com.boostinsider.fblogin.RetroFitAPI.models.twitterModel;
 
 import retrofit.Callback;
@@ -16,4 +17,6 @@ public interface ServerEndPointInterface {
     public void postMessage(@Body fBModel fb, Callback<serverReturn> cb);
     @POST("/oauth/twitter/post_to_twitter")
     public void postMessage(@Body twitterModel tw, Callback<serverReturn> cb);
+    @POST("/oauth/tumblr/add_post")
+    public void postMessage(@Body tumblrModel tmb, Callback<serverReturn> cb);
 }

@@ -19,15 +19,11 @@ import java.security.NoSuchAlgorithmException;
  */
 public class MyApplication extends Application {
 
-    // Note: Your consumer key and secret should be obfuscated in your source code before shipping.
-    private static final String TWITTER_KEY = "JRqXrHhWVh9nHgDVYDbnNEuc2";
-    private static final String TWITTER_SECRET = "NK9vzv7VQV3yFpW6B7LnddOv9PG1lE9anvp1ZALHxYYvOBn2ZL";
+
 
     @Override
     public void onCreate() {
         super.onCreate();
-        TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
-        Fabric.with(this, new Twitter(authConfig));
         printHashKey();
     }
     // method for printing out the HashKey
